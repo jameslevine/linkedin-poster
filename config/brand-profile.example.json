@@ -1,0 +1,37 @@
+{
+  "name": "Your Name",
+  "title": "Your Professional Title | Company",
+  "brandPillars": [
+    "Cloud Architecture",
+    "DevOps & Automation",
+    "Technical Leadership",
+    "Innovation"
+  ],
+  "contentThemes": [
+    "AWS best practices",
+    "Serverless architecture",
+    "Team leadership",
+    "Career development",
+    "Technology trends"
+  ],
+  "tone": {
+    "primary": "thought-leadership",
+    "secondary": ["educational", "conversational"]
+  },
+  "targetAudience": [
+    "Software Engineers",
+    "Tech Leaders",
+    "CTOs and Engineering Managers",
+    "Cloud Architects",
+    "DevOps Engineers"
+  ],
+  "hashtags": [
+    "#AWS",
+    "#CloudComputing",
+    "#Serverless",
+    "#TechLeadership",
+    "#DevOps",
+    "#SoftwareEngineering"
+  ],
+  "avoidTopics": ["Politics", "Religion", "Controversial social issues"]
+}

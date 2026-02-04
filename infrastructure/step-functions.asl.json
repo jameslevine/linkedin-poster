@@ -1,0 +1,191 @@
+{
+  "Comment": "LinkedIn Post Automation - Agentic workflow with email approval",
+  "StartAt": "ResearchAgent",
+  "States": {
+    "ResearchAgent": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ResearchAgentFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.research",
+      "ResultSelector": {
+        "topic.$": "$.Payload.topic",
+        "sources.$": "$.Payload.sources",
+        "keyPoints.$": "$.Payload.keyPoints",
+        "relevanceScore.$": "$.Payload.relevanceScore"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleError"
+        }
+      ],
+      "Next": "CheckResearchQuality"
+    },
+    "CheckResearchQuality": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.research.relevanceScore",
+          "NumericGreaterThanEquals": 0.6,
+          "Next": "ContentGenerator"
+        }
+      ],
+      "Default": "SkipLowQualityTopic"
+    },
+    "SkipLowQualityTopic": {
+      "Type": "Pass",
+      "Result": {
+        "status": "skipped",
+        "reason": "Research topic did not meet quality threshold"
+      },
+      "End": true
+    },
+    "ContentGenerator": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ContentGeneratorFunctionArn}",
+        "Payload": {
+          "research.$": "$.research"
+        }
+      },
+      "ResultPath": "$.content",
+      "ResultSelector": {
+        "drafts.$": "$.Payload.drafts",
+        "batchId.$": "$.Payload.batchId"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleError"
+        }
+      ],
+      "Next": "QualityReviewer"
+    },
+    "QualityReviewer": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${QualityReviewerFunctionArn}",
+        "Payload": {
+          "research.$": "$.research",
+          "drafts.$": "$.content.drafts"
+        }
+      },
+      "ResultPath": "$.review",
+      "ResultSelector": {
+        "approved.$": "$.Payload.approved",
+        "drafts.$": "$.Payload.drafts",
+        "qualityScore.$": "$.Payload.qualityScore",
+        "feedback.$": "$.Payload.feedback"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleError"
+        }
+      ],
+      "Next": "CheckQualityApproval"
+    },
+    "CheckQualityApproval": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.review.approved",
+          "BooleanEquals": true,
+          "Next": "DraftNotifier"
+        }
+      ],
+      "Default": "HandleRejection"
+    },
+    "HandleRejection": {
+      "Type": "Pass",
+      "Result": {
+        "status": "rejected",
+        "reason": "Content did not pass quality review"
+      },
+      "End": true
+    },
+    "DraftNotifier": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${DraftNotifierFunctionArn}",
+        "Payload": {
+          "batchId.$": "$.content.batchId",
+          "drafts.$": "$.review.drafts"
+        }
+      },
+      "ResultPath": "$.notification",
+      "ResultSelector": {
+        "success.$": "$.Payload.success",
+        "message.$": "$.Payload.message"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleError"
+        }
+      ],
+      "Next": "AwaitingApproval"
+    },
+    "AwaitingApproval": {
+      "Type": "Pass",
+      "Parameters": {
+        "status": "awaiting_approval",
+        "message": "Drafts sent for email approval. Use the approval links in the email to approve or reject.",
+        "batchId.$": "$.content.batchId",
+        "topic.$": "$.research.topic",
+        "draftCount.$": "States.ArrayLength($.review.drafts)"
+      },
+      "End": true
+    },
+    "HandleError": {
+      "Type": "Pass",
+      "Parameters": {
+        "status": "error",
+        "error.$": "$.error"
+      },
+      "End": true
+    }
+  }
+}

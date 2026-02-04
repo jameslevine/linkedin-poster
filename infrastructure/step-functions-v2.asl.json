@@ -1,0 +1,136 @@
+{
+  "Comment": "LinkedIn Post Generation Workflow with Approval",
+  "StartAt": "GenerateBatchId",
+  "States": {
+    "GenerateBatchId": {
+      "Type": "Pass",
+      "Parameters": {
+        "batchId.$": "States.UUID()",
+        "triggeredBy": "manual",
+        "timestamp.$": "$$.State.EnteredTime"
+      },
+      "ResultPath": "$",
+      "Next": "ResearchTopics"
+    },
+    "ResearchTopics": {
+      "Type": "Task",
+      "Resource": "${ResearchAgentFunctionArn}",
+      "Parameters": {
+        "batchId.$": "$.batchId",
+        "draftCount": 3
+      },
+      "ResultPath": "$.research",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "WorkflowFailed"
+        }
+      ],
+      "Next": "GenerateMultipleDrafts"
+    },
+    "GenerateMultipleDrafts": {
+      "Type": "Task",
+      "Resource": "${ContentGeneratorFunctionArn}",
+      "Parameters": {
+        "batchId.$": "$.batchId",
+        "research.$": "$.research",
+        "draftCount": 3
+      },
+      "ResultPath": "$.generation",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "WorkflowFailed"
+        }
+      ],
+      "Next": "ReviewAllDrafts"
+    },
+    "ReviewAllDrafts": {
+      "Type": "Task",
+      "Resource": "${QualityReviewerFunctionArn}",
+      "Parameters": {
+        "batchId.$": "$.batchId",
+        "drafts.$": "$.generation.drafts",
+        "research.$": "$.research"
+      },
+      "ResultPath": "$.reviews",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "WorkflowFailed"
+        }
+      ],
+      "Next": "PrepareDraftsForNotification"
+    },
+    "PrepareDraftsForNotification": {
+      "Type": "Pass",
+      "Parameters": {
+        "batchId.$": "$.batchId",
+        "drafts.$": "$.reviews.reviewedDrafts"
+      },
+      "ResultPath": "$.notificationInput",
+      "Next": "SendNotification"
+    },
+    "SendNotification": {
+      "Type": "Task",
+      "Resource": "${DraftNotifierFunctionArn}",
+      "Parameters": {
+        "batchId.$": "$.notificationInput.batchId",
+        "drafts.$": "$.notificationInput.drafts"
+      },
+      "ResultPath": "$.notification",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "WorkflowFailed"
+        }
+      ],
+      "Next": "WorkflowComplete"
+    },
+    "WorkflowComplete": {
+      "Type": "Succeed",
+      "Comment": "Drafts generated and notification sent. Awaiting user approval."
+    },
+    "WorkflowFailed": {
+      "Type": "Fail",
+      "Error": "WorkflowError",
+      "Cause": "An error occurred during the workflow execution"
+    }
+  }
+}

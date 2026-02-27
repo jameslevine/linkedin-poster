@@ -1,291 +1,178 @@
-# LinkedIn Post Automation
+# Research Paper Tracker
 
-An AWS-powered agentic workflow for automatically generating and publishing LinkedIn posts. Uses AI (Amazon Bedrock) to research trending topics, generate engaging content, and publish directly to LinkedIn.
-
-## Architecture
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌───────────────────┐
-│  EventBridge    │────▶│  Step Functions  │────▶│  Research Agent   │
-│  (Scheduler)    │     │  (Orchestrator)  │     │  (Lambda)         │
-└─────────────────┘     └──────────────────┘     └───────────────────┘
-                                                          │
-                                                          ▼
-┌─────────────────┐     ┌──────────────────┐     ┌───────────────────┐
-│  LinkedIn API   │◀────│  Publisher       │◀────│  Content Generator│
-│                 │     │  (Lambda)        │     │  (Lambda)         │
-└─────────────────┘     └──────────────────┘     └───────────────────┘
-                                                          │
-                                                          ▼
-                                                 ┌───────────────────┐
-                                                 │  Quality Reviewer │
-                                                 │  (Lambda)         │
-                                                 └───────────────────┘
-```
+A tool to discover and track trending research papers for content creation (e.g., LinkedIn posts, blog articles, newsletters).
 
 ## Features
 
-- **Agentic Workflow**: Multi-step AI pipeline with research, generation, and review stages
-- **Deep Research**: Fetches and analyzes RSS feeds to find trending, relevant topics
-- **Brand Alignment**: Generates content aligned with your brand pillars and voice
-- **Quality Control**: AI-powered review ensures content meets quality standards
-- **Automatic Publishing**: Posts directly to LinkedIn via API
-- **Token Management**: Automatic OAuth token refresh
-- **Serverless**: Fully serverless architecture using AWS Lambda and Step Functions
-
-## Prerequisites
-
-- AWS Account with appropriate permissions
-- AWS CLI configured
-- AWS SAM CLI installed
-- Node.js 20.x or later
-- LinkedIn Developer App with OAuth 2.0 credentials
+- ✅ Aggregate trending papers from multiple sources (Semantic Scholar, arXiv, Papers With Code)
+- ✅ Track citation counts and influential citations
+- ✅ Filter by topic/domain (AI/ML, Computer Science, etc.)
+- ✅ Score and rank papers based on citations, recency, code availability, and influence
+- ✅ CLI script for manual execution
+- ✅ JSON output for further processing
 
 ## Quick Start
 
-### 1. Clone and Install
-
 ```bash
-git clone <repository-url>
-cd linkedin-automation
+# Install dependencies
 npm install
+
+# Get trending ML papers
+npm run papers
+
+# Search for specific topics
+npm run papers:search -- -q "transformer architecture"
+
+# Get recent AI papers from arXiv
+npm run papers:recent -- -c artificial-intelligence
 ```
 
-### 2. Set Up LinkedIn Developer App
-
-1. Go to [LinkedIn Developers](https://www.linkedin.com/developers/apps)
-2. Create a new app or select existing
-3. Under "Auth" tab, add redirect URL: `http://localhost:3000/callback`
-4. Request access to these products:
-   - Share on LinkedIn
-   - Sign In with LinkedIn using OpenID Connect
-5. Note your Client ID and Client Secret
-
-### 3. Configure AWS Secrets
+## CLI Usage
 
 ```bash
-npm run setup:secrets
+# Basic usage
+npx ts-node scripts/fetch-papers.ts [command] [options]
+
+# Commands
+trending    # Get trending papers from multiple sources (default)
+search      # Search for papers by query
+recent      # Get recent papers from arXiv by category
+
+# Options
+--query, -q <query>       # Search query (default: "machine learning")
+--limit, -l <number>      # Number of results (default: 10)
+--source, -s <source>     # Source: semantic-scholar, arxiv, papers-with-code, all
+--category, -c <category> # arXiv category for 'recent' command
+--code                    # Only show papers with code implementations
+--json                    # Output results as JSON
+--help, -h                # Show help message
 ```
 
-Follow the prompts to enter your LinkedIn Client ID and Secret.
-
-### 4. Deploy Infrastructure
+## Examples
 
 ```bash
-npm run deploy
+# Get top 10 trending ML papers
+npm run papers
+
+# Search for transformer papers with 20 results
+npm run papers:search -- -q "transformer architecture" -l 20
+
+# Get recent AI papers from arXiv
+npm run papers:recent -- -c artificial-intelligence
+
+# Get papers with code only
+npm run papers -- --code
+
+# Output as JSON for further processing
+npm run papers -- --json > papers.json
+
+# Search from a specific source
+npm run papers -- -s semantic-scholar -q "large language models"
 ```
 
-This deploys:
+## Available Categories
 
-- DynamoDB tables (posts, config)
-- Lambda functions (5 agents)
-- Step Functions state machine
-- EventBridge scheduler
-- Secrets Manager secret
-- IAM roles and policies
+For the `recent` command, you can use these arXiv categories:
 
-### 5. Complete OAuth Authorization
+- `computer-science` - All CS papers
+- `machine-learning` - Machine Learning (cs.LG)
+- `artificial-intelligence` - AI (cs.AI)
+- `computer-vision` - Computer Vision (cs.CV)
+- `natural-language-processing` - NLP (cs.CL)
+- `robotics` - Robotics (cs.RO)
+- `physics` - Physics
+- `mathematics` - Mathematics
+- `statistics` - Statistics
 
-```bash
-npm run setup:oauth
+## Paper Scoring
+
+Papers are scored on a 100-point scale based on:
+
+| Factor    | Max Points | Description                |
+| --------- | ---------- | -------------------------- |
+| Citations | 30         | Raw citation count         |
+| Recency   | 30         | How recently published     |
+| Code      | 20         | Has code implementation    |
+| Influence | 20         | Influential citation count |
+
+## Data Sources
+
+### Primary Sources
+
+- **[Semantic Scholar](https://www.semanticscholar.org/)** - AI-powered research discovery with citation metrics
+- **[arXiv](https://arxiv.org/)** - Preprint server for scientific papers
+- **[Papers With Code](https://paperswithcode.com/)** - ML papers with code implementations
+
+### Validity Metrics
+
+- Citation count and velocity
+- Influential citations (citations from important papers)
+- Peer review status
+- Code availability/reproducibility
+- Author credentials
+
+## Project Structure
+
+```
+src/
+├── types/
+│   └── index.ts          # TypeScript type definitions
+├── services/
+│   ├── semantic-scholar.ts  # Semantic Scholar API
+│   ├── arxiv.ts             # arXiv API
+│   ├── papers-with-code.ts  # Papers With Code API
+│   └── aggregator.ts        # Paper aggregation & scoring
+└── index.ts              # Main exports
+
+scripts/
+└── fetch-papers.ts       # CLI script
 ```
 
-This opens a browser for LinkedIn authorization and stores the access token.
+## Programmatic Usage
 
-### 6. Configure Brand Profile and RSS Feeds
+```typescript
+import { aggregator, semanticScholar, arxiv } from './src';
 
-1. Copy example configs:
+// Get trending papers
+const trending = await aggregator.getTrendingPapers({
+  query: 'large language models',
+  limit: 10,
+  requireCode: true,
+});
 
-```bash
-cp config/brand-profile.example.json config/brand-profile.json
-cp config/rss-feeds.example.json config/rss-feeds.json
+// Search across all sources
+const results = await aggregator.searchPapers({
+  query: 'transformer attention mechanism',
+  limit: 20,
+});
+
+// Get recent arXiv papers
+const recent = await aggregator.getRecentPapers('machine-learning', 10);
+
+// Use individual services
+const paper = await semanticScholar.getPaper('arxiv:2301.00001');
+const arxivPapers = await arxiv.getRecentPapers('artificial-intelligence', 20);
 ```
-
-2. Edit `config/brand-profile.json` with your details:
-
-```json
-{
-  "name": "Your Name",
-  "title": "Your Title | Company",
-  "brandPillars": ["Your", "Brand", "Pillars"],
-  "contentThemes": ["Topics", "You", "Cover"],
-  "tone": {
-    "primary": "thought-leadership",
-    "secondary": ["educational", "conversational"]
-  },
-  "targetAudience": ["Your", "Target", "Audience"],
-  "hashtags": ["#YourHashtags"]
-}
-```
-
-3. Edit `config/rss-feeds.json` with your preferred news sources
-
-4. Upload configuration:
-
-```bash
-npm run setup:config
-```
-
-### 7. Test the Workflow
-
-```bash
-npm run trigger
-```
-
-## Configuration
-
-### Brand Profile
-
-| Field            | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `name`           | Your name as it appears on LinkedIn                          |
-| `title`          | Your professional title                                      |
-| `brandPillars`   | Core topics you're known for                                 |
-| `contentThemes`  | Specific themes for content                                  |
-| `tone.primary`   | Main voice (thought-leadership, educational, conversational) |
-| `tone.secondary` | Supporting tones                                             |
-| `targetAudience` | Who you're writing for                                       |
-| `hashtags`       | Preferred hashtags                                           |
-| `avoidTopics`    | Topics to never cover                                        |
-
-### RSS Feeds
-
-| Field      | Description               |
-| ---------- | ------------------------- |
-| `name`     | Display name for the feed |
-| `url`      | RSS/Atom feed URL         |
-| `category` | Category for grouping     |
-| `priority` | 1 (highest) to 5 (lowest) |
-
-## Workflow Details
-
-### 1. Research Agent
-
-- Fetches latest articles from configured RSS feeds
-- Filters to last 24 hours
-- Uses Bedrock to analyze and select best topic
-- Scores relevance to brand pillars
-
-### 2. Content Generator
-
-- Takes research output
-- Generates LinkedIn post with hook, body, CTA
-- Creates 2 alternative variations
-- Suggests optimal hashtags
-
-### 3. Quality Reviewer
-
-- Reviews content against brand guidelines
-- Scores quality (0-1)
-- Selects best variation
-- Approves or rejects with feedback
-
-### 4. LinkedIn Publisher
-
-- Posts approved content to LinkedIn
-- Saves record to DynamoDB
-- Returns post URL
-
-## Scheduling
-
-Default schedule: **9 AM UTC, Monday-Friday**
-
-To modify, update the `PostingSchedule` parameter in `infrastructure/template.yaml`:
-
-```yaml
-PostingSchedule:
-  Type: String
-  Default: 'cron(0 9 ? * MON-FRI *)'
-```
-
-## Monitoring
-
-### CloudWatch Logs
-
-Each Lambda function logs to CloudWatch. View logs:
-
-```bash
-aws logs tail /aws/lambda/linkedin-automation-research-agent-dev --follow
-```
-
-### Step Functions Console
-
-View workflow executions in the AWS Step Functions console.
-
-### DynamoDB
-
-View published posts:
-
-```bash
-aws dynamodb scan --table-name linkedin-automation-posts-dev
-```
-
-## Troubleshooting
-
-### Token Expired
-
-```bash
-npm run setup:oauth
-```
-
-### No Posts Generated
-
-1. Check RSS feeds are returning content
-2. Verify brand profile is configured
-3. Check CloudWatch logs for errors
-
-### Quality Score Too Low
-
-- Adjust brand profile for clearer guidance
-- Review quality reviewer feedback in logs
-
-## Cost Estimation
-
-Monthly costs (approximate):
-
-- Lambda: ~$1-5 (depending on frequency)
-- DynamoDB: ~$1-2 (on-demand pricing)
-- Step Functions: ~$1
-- Secrets Manager: ~$0.40
-- Bedrock: ~$5-20 (depending on usage)
-
-**Total: ~$10-30/month**
-
-## Security
-
-- LinkedIn credentials stored in AWS Secrets Manager
-- IAM roles follow least-privilege principle
-- No credentials in code or environment variables
-- Automatic token refresh before expiry
 
 ## Development
 
-### Local Testing
-
 ```bash
+# Install dependencies
+npm install
+
+# Build TypeScript
 npm run build
-npm test
-```
 
-### Lint
-
-```bash
+# Run linting
 npm run lint
-```
 
-### Type Check
+# Format code
+npm run format
 
-```bash
-npm run typecheck
+# Run tests
+npm test
 ```
 
 ## License
 
 MIT
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request

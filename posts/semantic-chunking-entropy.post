@@ -1,0 +1,10 @@
+// Research post: Semantic Chunking and Language Entropy
+
+# "LLMs are finally approaching 1 bit per character - a 75-year-old benchmark"
+? "Entropy measures unpredictability. Lower entropy = more compressible text."
+! "Claude Shannon estimated English at 1 bit/char in 1951. LLMs just reached this limit"
++ 1 bit | "per character entropy rate"
++ 75 years | "since Shannon's estimate"
++ 2026 | "when LLMs reached this limit"
+> "The ceiling for language compression is a physics problem, not an engineering one"
+@ "Semantic Chunking and the Entropy of Natural Language" | http://arxiv.org/abs/2602.13194v1 | "arXiv preprint Feb 2026, builds on Shannon 1951"

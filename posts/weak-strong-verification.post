@@ -1,0 +1,10 @@
+// Research post: When to Trust the Cheap Check
+
+# "Not all AI verification is equal - knowing when to trust the cheap check matters"
+? "LLMs use two types of verification: cheap internal checks and expensive human review."
+! "A two-threshold policy decides when cheap verification is enough and when to escalate"
++ 2 | "thresholds needed for optimal verification"
++ 3 | "error types: accept, reject, escalation"
++ 0 | "assumptions needed about the model or verifier"
+> "The cost of checking everything is too high. The cost of checking nothing is higher"
+@ "When to Trust the Cheap Check" | http://arxiv.org/abs/2602.17633v1 | "arXiv preprint Feb 2026, UPenn researchers"

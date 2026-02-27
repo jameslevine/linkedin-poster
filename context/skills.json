@@ -1,0 +1,57 @@
+{
+  "profile": {
+    "name": "James Levine",
+    "role": "Full-Stack Engineer",
+    "summary": "Full-stack engineer with 10+ years experience building scalable web, mobile, and cloud applications. Expert in JavaScript, TypeScript, React, Node.js, Python, and AWS serverless. Open source contributor to AWS CLI, SAM, CDK, Amplify. Conference speaker and engineering community founder."
+  },
+  "skills": {
+    "primary": [
+      "full-stack development",
+      "serverless architecture",
+      "cloud computing",
+      "AWS",
+      "generative AI"
+    ],
+    "technical": [
+      "JavaScript",
+      "TypeScript",
+      "Python",
+      "React",
+      "React Native",
+      "Node.js",
+      "AWS Lambda",
+      "Terraform",
+      "Docker",
+      "Amazon Bedrock",
+      "LangChain",
+      "LangGraph"
+    ],
+    "domains": [
+      "software engineering",
+      "web development",
+      "mobile development",
+      "cloud architecture",
+      "AI/ML applications"
+    ]
+  },
+  "interests": [
+    "large language models",
+    "generative AI applications",
+    "agentic AI",
+    "serverless computing",
+    "developer experience",
+    "AI-assisted development"
+  ],
+  "searchQueries": [
+    "large language models software engineering",
+    "agentic AI applications",
+    "serverless machine learning",
+    "AI code generation",
+    "LLM developer tools",
+    "generative AI enterprise applications",
+    "AWS AI services",
+    "retrieval augmented generation",
+    "AI agents automation",
+    "cloud native AI architecture"
+  ]
+}

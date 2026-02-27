@@ -1,13 +1,11 @@
 # Dependencies
 node_modules/
-package-lock.json
 
 # Build outputs
 dist/
-.aws-sam/
 .esbuild/
 
-# Environment and secrets - NEVER commit these
+# Environment and secrets
 .env
 .env.*
 *.env
@@ -16,12 +14,6 @@ dist/
 .env.production
 secrets.json
 credentials.json
-**/secrets/**
-**/credentials/**
-
-# AWS
-*.pem
-*.key
 
 # IDE
 .idea/
@@ -58,11 +50,5 @@ temp/
 local-config.json
 local-*.json
 
-# Config files with secrets (use .example.json as templates)
-config/brand-profile.json
-config/rss-feeds.json
-
-# OAuth tokens - NEVER commit
-oauth-tokens.json
-tokens.json
-access-token.txt
+# Output files
+output/
